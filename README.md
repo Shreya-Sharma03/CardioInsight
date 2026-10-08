@@ -236,12 +236,10 @@ $$
 
 where:
 
-- \(x_{c,t}\) is the signal value at time \(t\) for lead \(c\)
-- \(\mu_c\) is the mean of lead \(c\)
-- \(\sigma_c\) is the standard deviation of lead \(c\)
-- \(\epsilon = 10^{-8}\) prevents division by zero
-
----
+(x_{c,t}) is the signal value at time (t) for lead (c)
+(\mu_c) is the mean of lead (c)
+(\sigma_c) is the standard deviation of lead (c)
+(\epsilon = 10^{-8}) prevents division by zero
 
 ## Data
 
@@ -301,13 +299,9 @@ The training objective combines:
 
 The positive-class weight is calculated from the training-set class distribution:
 
-$$
-w_{\text{pos}}
-=
-\frac{N_{\text{negative}}}
-{N_{\text{positive}}}
-=
-\frac{55,513}{16,962}
+\frac{N_{\text{negative}}}{N_{\text{positive}}}
+
+\frac{55{,}513}{16{,}962}
 \approx 3.2728
 $$
 
