@@ -228,18 +228,17 @@ This reduces low-frequency baseline variation and higher-frequency noise.
 Each ECG lead is normalized independently along the time dimension:
 
 $$
-\tilde{x}_{c,t}
-=
-\frac{x_{c,t}-\mu_c}
-{\sigma_c+\epsilon}
+\tilde{x}_{c,t} =
+\frac{x_{c,t} - \mu_c}
+{\sigma_c + \epsilon}
 $$
 
 where:
 
-(x_{c,t}) is the signal value at time (t) for lead (c)
-(\mu_c) is the mean of lead (c)
-(\sigma_c) is the standard deviation of lead (c)
-(\epsilon = 10^{-8}) prevents division by zero
+- $x_{c,t}$ is the signal value at time $t$ for lead $c$
+- $\mu_c$ is the mean of lead $c$
+- $\sigma_c$ is the standard deviation of lead $c$
+- $\epsilon = 10^{-8}$ prevents division by zero
 
 ## Data
 
@@ -267,8 +266,7 @@ Each recording contains:
 The standard leads are:
 
 ```text
-I, II, III, aVR, aVL, aVF,
-V1, V2, V3, V4, V5, V6
+I, II, III, aVR, aVL, aVF, V1, V2, V3, V4, V5, V6
 ```
 
 ### Dataset Splits
@@ -299,20 +297,22 @@ The training objective combines:
 
 The positive-class weight is calculated from the training-set class distribution:
 
+$$
 \frac{N_{\text{negative}}}{N_{\text{positive}}}
+$$
 
-\frac{55{,}513}{16{,}962}
-\approx 3.2728
+$$
+\frac{55,513}{16,962} \approx 3.2728
 $$
 
 ### Optimization
 
-* **Optimizer:** AdamW
-* **Learning rate:** `3 × 10⁻⁴`
-* **Weight decay:** `1 × 10⁻⁴`
-* **Scheduler:** Cosine Annealing Warm Restarts
-* **Gradient clipping:** `1.0`
-* **Early stopping:** validation-based
+- **Optimizer:** AdamW
+- **Learning rate:** $3 \times 10^{-4}$
+- **Weight decay:** $1 \times 10^{-4}$
+- **Scheduler:** Cosine Annealing Warm Restarts
+- **Gradient clipping:** $1.0
+- **Early stopping:** validation-based
 
 The training workflow is available through `src/train_fusion.py`.
 
