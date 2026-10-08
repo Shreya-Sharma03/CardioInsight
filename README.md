@@ -1,36 +1,44 @@
 # CardioInsight
 
-CardioInsight is a deep-learning project for estimating the risk of reduced left ventricular ejection fraction from standard 12-lead electrocardiogram (ECG) recordings. The system combines complementary convolutional and recurrent representations of ECG signals and uses adaptive feature fusion before classification.
+CardioInsight is a deep-learning project for estimating the risk of reduced left ventricular ejection fraction (LVEF) from standard 12-lead electrocardiogram (ECG) recordings. The system combines convolutional and recurrent representations of ECG signals and fuses them before binary classification.
 
 ---
 
 ## Overview
 
-Reduced left ventricular ejection fraction (LVEF) is an important indicator of systolic cardiac dysfunction. CardioInsight explores whether information contained in a standard 12-lead ECG can be used to estimate this condition without directly using echocardiographic measurements as model input.
+Reduced left ventricular ejection fraction is an indicator of systolic cardiac dysfunction. CardioInsight explores the use of standard 12-lead ECG recordings for estimating whether a recording belongs to the target class defined by `lvef_lte_45_flag`.
 
-The pipeline processes a 10-second, 12-lead ECG recording and extracts two complementary types of representations:
+The system processes a 10-second ECG recording and extracts complementary information using two branches:
 
-* **Morphological features** from a 1D ResNet34 network
-* **Temporal features** from a stacked bidirectional GRU with temporal attention
+* **ResNet34-1D** for waveform and morphological features
+* **Stacked BiGRU with temporal attention** for sequential features
 
-These representations are combined using learned modality weighting and multi-head attention before producing the final risk probability.
+The resulting representations are combined using adaptive modality weighting and multi-head attention before producing a binary prediction.
 
 ### Input
 
-* 12-lead ECG
+* Standard 12-lead ECG
 * Sampling frequency: **250 Hz**
-* Recording duration: **10 seconds**
+* Recording length: **10 seconds**
 * Input shape: **`(12, 2500)`**
 
 ### Output
 
-* Predicted probability
-* Binary risk classification:
+The classifier produces a probability for the positive class and converts it into a binary prediction using a decision threshold.
 
-  * **Low Risk**
-  * **High Risk**
+```text
+Probability < 0.41  →  Low Risk  (class 0)
+Probability ≥ 0.41  →  High Risk (class 1)
+```
 
-The target is based on the `lvef_lte_45_flag` label used in the dataset.
+The two labels correspond to the binary target used by the project:
+
+```text
+0 → Low Risk / Normal
+1 → High Risk / LVEF ≤ 45%
+```
+
+The probability is continuous, but the final categorical prediction is **binary**. There is no separate Moderate Risk class in the current implementation.
 
 ---
 
@@ -44,82 +52,54 @@ The target is based on the `lvef_lte_45_flag` label used in the dataset.
                 ┌─────────────────┐
                 │  Preprocessing  │
                 │                 │
-                │ 0.5–40 Hz       │
+                │    0.5–40 Hz    │
                 │ Bandpass Filter │
-                │ + Z-score Norm  │
+                │ + Z-Score Norm  │
                 └────────┬────────┘
                          │
-               ┌─────────┴─────────┐
-               │                   │
-               ▼                   ▼
-       ┌───────────────┐   ┌────────────────┐
-       │ ResNet34-1D   │   │     BiGRU      │
-       │               │   │                │
-       │ Morphological │   │ Temporal       │
-       │ Features      │   │ Features       │
-       └───────┬───────┘   └───────┬────────┘
-               │                   │
-               │    512-d / 256-d  │
-               └─────────┬─────────┘
+                ┌────────┴────────┐
+                │                 │
+                ▼                 ▼
+        ┌───────────────┐  ┌────────────────┐
+        │ ResNet34-1D   │  │     BiGRU      │
+        │               │  │                │
+        │ Morphological │  │    Temporal    │
+        │   Features    │  │    Features    │
+        │    512-d      │  │     256-d      │
+        └───────┬───────┘  └───────┬────────┘
+                │                  │
+                └────────┬─────────┘
                          ▼
-              ┌─────────────────────┐
-              │ Adaptive Reliability│
-              │ Fusion              │
-              │                     │
-              │ Learned Weights     │
-              │ + Multi-Head Attn.  │
-              └──────────┬──────────┘
-                         ▼
-                Classification Head
+               Adaptive Reliability Fusion
+                         │
+                  8-Head Attention
                          │
                          ▼
-                  Risk Probability
+                 Classification MLP
                          │
                          ▼
-                Decision Threshold
-                       τ = 0.41
+                 Sigmoid Probability
                          │
                          ▼
-              Low Risk / High Risk
+               Decision Threshold 0.41
+                         │
+                  ┌──────┴──────┐
+                  ▼             ▼
+               Low Risk      High Risk
+               Class 0        Class 1
 ```
 
 ---
 
 ## Model Architecture
 
-### 1. ECG Preprocessing
-
-Implemented in `src/preprocessing.py`.
-
-The preprocessing pipeline standardizes ECG recordings before they are passed to the neural networks.
-
-**Operations:**
-
-1. Input shape validation and formatting
-2. Zero-padding or truncation to 2,500 samples when required
-3. 4th-order Butterworth bandpass filtering from **0.5 to 40 Hz**
-4. Lead-wise z-score normalization
-
-The normalization is applied independently to each ECG lead:
-
-$$
-\tilde{x}_{c,t}
-=
-\frac{x_{c,t}-\mu_c}
-{\sigma_c+\epsilon}
-$$
-
-where \(c\) denotes the lead and \(t\) denotes the time sample.
-
----
-
-### 2. ResNet34-1D Branch
+### ResNet34-1D
 
 Implemented in `src/resnet_model.py`.
 
-The ResNet branch adapts the ResNet-34 architecture to one-dimensional ECG signals.
+The first branch adapts the ResNet-34 architecture to one-dimensional multi-channel ECG signals.
 
-**Architecture:**
+The network contains:
 
 * Input channels: `12`
 * Initial `Conv1d`
@@ -128,19 +108,19 @@ The ResNet branch adapts the ResNet-34 architecture to one-dimensional ECG signa
 * BasicBlock configuration: `[3, 4, 6, 3]`
 * Channel progression: `64 → 128 → 256 → 512`
 * Adaptive average pooling
-* Output representation: **512 dimensions**
+* 512-dimensional feature representation
 
-This branch focuses on local waveform and morphological information distributed across the ECG leads.
+This branch captures local waveform and morphological characteristics in the ECG signal.
 
 ---
 
-### 3. BiGRU Branch
+### BiGRU
 
 Implemented in `src/bigru_model.py`.
 
-The recurrent branch models sequential information in the ECG waveform.
+The second branch models sequential information across the ECG recording.
 
-**Architecture:**
+The network contains:
 
 * Channel-wise batch normalization
 * Three stacked bidirectional GRU layers
@@ -149,60 +129,117 @@ The recurrent branch models sequential information in the ECG waveform.
 * Residual connections between recurrent layers
 * Layer normalization
 * Bahdanau additive temporal attention
-* Output representation: **256 dimensions**
+* 256-dimensional temporal representation
 
-The attention layer weights different time steps before producing the final temporal representation.
+The attention mechanism assigns different weights to time steps before generating the final temporal feature vector.
 
 ---
 
-### 4. Adaptive Feature Fusion
+### Adaptive Reliability Fusion
 
 Implemented in `src/fusion_model.py`.
 
-The ResNet and BiGRU representations have different dimensions, so they are first projected into a shared **512-dimensional feature space**.
+The ResNet and BiGRU representations have different dimensions, so they are first projected into a common 512-dimensional embedding space.
 
-The fusion module then:
+The fusion process is:
 
-1. Projects both feature vectors to the same dimension
-2. Computes a reliability score for each branch
-3. Converts the scores into normalized modality weights using softmax
-4. Forms weighted modality tokens
-5. Applies **8-head multi-head self-attention**
-6. Mean-pools the resulting representations
-7. Applies residual feed-forward refinement
+1. Project ResNet features from `512 → 512`
+2. Project BiGRU features from `256 → 512`
+3. Estimate a reliability score for each branch
+4. Convert the two scores into normalized weights using softmax
+5. Weight the two modality representations
+6. Treat them as two feature tokens
+7. Apply 8-head multi-head self-attention
+8. Mean-pool the attention output
+9. Apply residual feed-forward refinement and LayerNorm
 
-The two learned modality weights satisfy:
+The modality weights satisfy:
 
 $$
-\alpha_{\text{ResNet}}+\alpha_{\text{BiGRU}}=1
+\alpha_{\text{ResNet}} + \alpha_{\text{BiGRU}} = 1
 $$
 
-This allows the relative contribution of the two branches to vary between samples instead of relying on fixed weighting.
+This allows the relative contribution of the two branches to vary between samples.
 
 ---
 
-### 5. Classification Head
+### Classification Head
 
-The fused 512-dimensional representation is passed through a multilayer perceptron containing:
-
-* Linear layers
-* Layer normalization
-* GELU activations
-* Dropout
-* Final single-output logit
-
-The logit is converted into a probability using the sigmoid function:
-
-$$
-p = \sigma(z)
-$$
-
-A decision threshold of **0.41**, selected from the validation set, is used for binary classification:
+The fused 512-dimensional representation is passed through a multilayer perceptron:
 
 ```text
-p >= 0.41  →  High Risk
-p <  0.41  →  Low Risk
+512 → 512 → 256 → 64 → 1
 ```
+
+The hidden layers use LayerNorm, GELU activations, and dropout.
+
+The final layer produces a single logit:
+
+$$
+z \in \mathbb{R}
+$$
+
+The sigmoid function converts the logit into a probability:
+
+$$
+p = \frac{1}{1 + e^{-z}}
+$$
+
+The final prediction is then determined using the decision threshold:
+
+$$
+p \geq 0.41 \Rightarrow \text{High Risk}
+$$
+
+$$
+p < 0.41 \Rightarrow \text{Low Risk}
+$$
+
+The threshold `0.41` is stored in `models/threshold.npy` and was selected using the validation data.
+
+---
+
+## Preprocessing
+
+Implemented in `src/preprocessing.py`.
+
+The preprocessing pipeline performs input formatting, filtering, and normalization.
+
+### Input Formatting
+
+The expected ECG shape is:
+
+```text
+(12, 2500)
+```
+
+Signals supplied as `(2500, 12)` are transposed automatically.
+
+Recordings shorter than 2,500 samples are zero-padded, while longer recordings are truncated.
+
+### Bandpass Filtering
+
+A 4th-order Butterworth bandpass filter is applied between **0.5 Hz and 40 Hz** using zero-phase forward-backward filtering.
+
+This reduces low-frequency baseline variation and higher-frequency noise.
+
+### Lead-wise Z-Score Normalization
+
+Each ECG lead is normalized independently along the time dimension:
+
+$$
+\tilde{x}_{c,t}
+=
+\frac{x_{c,t}-\mu_c}
+{\sigma_c+\epsilon}
+$$
+
+where:
+
+- \(x_{c,t}\) is the signal value at time \(t\) for lead \(c\)
+- \(\mu_c\) is the mean of lead \(c\)
+- \(\sigma_c\) is the standard deviation of lead \(c\)
+- \(\epsilon = 10^{-8}\) prevents division by zero
 
 ---
 
@@ -212,24 +249,33 @@ The project uses the **EchoNext v1.1.1** dataset.
 
 ### Target
 
-The prediction target is:
+The target variable is:
 
-`lvef_lte_45_flag`
+```text
+lvef_lte_45_flag
+```
 
-which identifies recordings associated with LVEF at or below 45%.
+The project treats this as a binary classification problem corresponding to whether LVEF is at or below 45%.
 
 ### ECG Format
 
 Each recording contains:
 
 * 12 standard ECG leads
-* 250 Hz sampling frequency
-* 10 seconds of signal
+* Sampling frequency: **250 Hz**
+* Duration: **10 seconds**
 * 2,500 samples per lead
+
+The standard leads are:
+
+```text
+I, II, III, aVR, aVL, aVF,
+V1, V2, V3, V4, V5, V6
+```
 
 ### Dataset Splits
 
-The repository uses patient-level, deduplicated splits:
+Patient-level, deduplicated partitions are used.
 
 | Split      | Patients | Positive | Negative |
 | ---------- | -------: | -------: | -------: |
@@ -237,23 +283,33 @@ The repository uses patient-level, deduplicated splits:
 | Validation |    4,626 |        — |        — |
 | Test       |    5,442 |        — |        — |
 
-The training split has a negative-to-positive ratio of approximately **3.27:1**, which is addressed during training through class-weighted loss.
+The training split contains approximately **3.27 negative samples for every positive sample**.
 
 ---
 
 ## Training
 
-The training pipeline uses a combination of class-imbalance handling and regularization techniques.
+The fusion model uses class-imbalance handling and regularization during training.
 
-### Loss
+### Loss Function
 
 The training objective combines:
 
-* Class-weighted binary cross-entropy
-* Focal loss
+* Class-weighted Binary Cross-Entropy
+* Focal Loss
 * Modality entropy regularization
 
-The positive class weight is derived from the training-set class distribution.
+The positive-class weight is calculated from the training-set class distribution:
+
+$$
+w_{\text{pos}}
+=
+\frac{N_{\text{negative}}}
+{N_{\text{positive}}}
+=
+\frac{55,513}{16,962}
+\approx 3.2728
+$$
 
 ### Optimization
 
@@ -261,20 +317,10 @@ The positive class weight is derived from the training-set class distribution.
 * **Learning rate:** `3 × 10⁻⁴`
 * **Weight decay:** `1 × 10⁻⁴`
 * **Scheduler:** Cosine Annealing Warm Restarts
-* **Gradient clipping:** maximum norm `1.0`
+* **Gradient clipping:** `1.0`
 * **Early stopping:** validation-based
 
-The fusion model is trained using the feature representations produced by the two branches.
-
-### Training Script
-
-The training workflow is available through:
-
-```bash
-python src/train_fusion.py
-```
-
-Refer to the script's command-line arguments for dataset and output-path configuration.
+The training workflow is available through `src/train_fusion.py`.
 
 ---
 
@@ -284,33 +330,33 @@ Refer to the script's command-line arguments for dataset and output-path configu
 
 The test split contains **5,442 patients**.
 
-The table below compares the two individual branches with the combined fusion model.
+The following table compares the individual branches with the combined fusion model.
 
 | Model                    |   Accuracy | Balanced Accuracy |  Precision |     Recall | Specificity |         F1 |    ROC-AUC |     PR-AUC |
 | ------------------------ | ---------: | ----------------: | ---------: | ---------: | ----------: | ---------: | ---------: | ---------: |
-| BiGRU                    |     81.77% |            81.17% |     49.05% | **80.25%** |      82.10% |     60.88% |     88.39% |     69.46% |
+| BiGRU                    |     81.77% |        **81.17%** |     49.05% | **80.25%** |      82.10% |     60.88% |     88.39% |     69.46% |
 | ResNet34-1D              |     87.47% |            79.98% |     63.51% |     68.40% |      91.56% | **65.87%** | **89.28%** |     71.52% |
 | **CardioInsight Fusion** | **87.80%** |            79.41% | **65.20%** |     66.42% |  **92.39%** |     65.81% |     88.93% | **71.56%** |
 
-### Additional Test Metrics
+### Additional Fusion Metrics
 
-For the fusion model:
+| Metric                           |      Value |
+| -------------------------------- | ---------: |
+| Matthews Correlation Coefficient | **0.5839** |
+| Cohen's Kappa                    | **0.5838** |
+| Brier Score                      | **0.0877** |
+| Log Loss                         | **0.2970** |
 
-| Metric        |      Value |
-| ------------- | ---------: |
-| MCC           | **0.5839** |
-| Cohen's Kappa | **0.5838** |
-| Brier Score   | **0.0877** |
-| Log Loss      | **0.2970** |
-
-Using the validation-derived threshold of **0.41**, the fusion model reaches:
+Using the validation-derived threshold of `0.41`, the fusion model achieves:
 
 * **81.21% Balanced Accuracy**
 * **78.79% Sensitivity**
 
 ### Validation Set
 
-On the validation split (`N = 4,626`) at threshold `0.50`:
+The validation split contains **4,626 patients**.
+
+At threshold `0.50`, the recorded metrics are:
 
 | Metric            |      Value |
 | ----------------- | ---------: |
@@ -320,45 +366,217 @@ On the validation split (`N = 4,626`) at threshold `0.50`:
 | Recall            | **77.94%** |
 | F1-Score          | **66.21%** |
 
-### Interpretation
+### Comparison
 
-The three configurations emphasize different aspects of the ECG signal:
+The individual branches show different strengths:
 
-* **BiGRU:** highest recall among the tested models
-* **ResNet34-1D:** highest ROC-AUC and F1-score
-* **Fusion model:** highest accuracy, precision, specificity, and PR-AUC
+* **BiGRU** provides the highest recall.
+* **ResNet34-1D** provides the highest ROC-AUC and F1-score.
+* **Fusion** provides the highest accuracy, precision, specificity, and PR-AUC.
 
-This comparison shows the effect of combining complementary morphological and temporal representations rather than relying on a single branch.
+The comparison illustrates the effect of combining complementary morphological and temporal ECG representations.
 
 ---
 
 ## Project Contribution
 
-The main contribution of CardioInsight is the combination of two complementary ECG representations within a single prediction pipeline.
+The main contribution of CardioInsight is the integration of complementary morphological and temporal ECG representations within one prediction pipeline.
 
-Instead of using only one representation:
+The approach combines:
 
-* the **ResNet34-1D branch** captures waveform and morphological patterns,
-* the **BiGRU branch** captures temporal and sequential information,
-* the **adaptive fusion module** learns sample-specific weights for the two representations before attention-based feature integration.
+1. **ResNet34-1D** for waveform and morphological features.
+2. **BiGRU with temporal attention** for sequential ECG information.
+3. **Learned sample-specific modality weighting** to control the relative contribution of the two branches.
+4. **Multi-head attention-based fusion** to integrate the resulting representations.
 
-The project therefore explores an end-to-end way of combining morphological and temporal ECG information for risk estimation.
-
-This should be considered a **project-level architectural contribution**, rather than a claim of a fundamentally new neural-network architecture.
+The contribution is primarily architectural and experimental: it explores whether adaptive fusion of complementary ECG representations can improve binary risk estimation compared with individual branches.
 
 ---
 
 ## Future Improvements
 
-Several extensions could improve the current system:
+Possible extensions of the project include:
 
-* **External validation:** evaluate the trained models on independent ECG datasets from other sources.
+* **External validation:** evaluate the models on independent ECG datasets.
 * **Interpretability:** add lead-level and time-level attribution methods to identify influential ECG regions.
-* **Robustness testing:** evaluate performance under noisy signals, missing leads, baseline drift, and other acquisition artifacts.
-* **Calibration:** study probability calibration across datasets with different disease prevalence.
-* **Subgroup analysis:** compare performance across demographic and clinical subgroups.
-* **Additional baselines:** compare against other temporal, convolutional, and transformer-based ECG models.
-* **Efficient inference:** explore model compression, quantization, and optimized inference for resource-constrained devices.
+* **Robustness:** evaluate the system under noisy signals, missing leads, baseline drift, and acquisition artifacts.
+* **Calibration:** assess probability calibration under different class prevalences and datasets.
+* **Subgroup analysis:** evaluate performance across demographic and clinical subgroups.
+* **Additional baselines:** compare with transformer-based and other ECG-specific architectures.
+* **Efficient inference:** explore quantization, pruning, and knowledge distillation for resource-constrained environments.
+
+---
+
+## Installation
+
+Clone the repository and create a Python virtual environment:
+
+```bash
+git clone https://github.com/Shreya-Sharma03/CardioInsight.git
+cd CardioInsight
+
+python -m venv .venv
+```
+
+### Linux / macOS
+
+```bash
+source .venv/bin/activate
+```
+
+### Windows
+
+```bash
+.venv\Scripts\activate
+```
+
+Install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Usage
+
+### Demo
+
+Run inference using a synthetic 12-lead ECG:
+
+```bash
+python src/predict.py --demo
+```
+
+### ECG File
+
+For an ECG stored as a NumPy `.npy` file:
+
+```bash
+python src/predict.py --ecg_file path/to/ecg_recording.npy
+```
+
+The array should contain a 12-lead ECG compatible with the preprocessing pipeline.
+
+### Python API
+
+```python
+import numpy as np
+from src.predict import CardioInsightPredictor
+
+predictor = CardioInsightPredictor()
+
+ecg = np.random.randn(12, 2500).astype(np.float32)
+
+result = predictor.predict_ecg(ecg, fs=250.0)
+
+print("Risk Category:", result["risk_stratification"])
+print("Risk Probability:", result["heart_failure_risk_probability"])
+print("Decision Threshold:", result["decision_threshold"])
+print("Modality Weights:", result["modality_reliability_weights"])
+```
+
+Example output contains:
+
+```text
+Risk Category: Low Risk
+Risk Probability: 0.36
+Decision Threshold: 0.41
+```
+
+The exact probability depends on the input signal.
+
+---
+
+## Training
+
+The fusion model training workflow is provided in:
+
+```text
+src/train_fusion.py
+```
+
+A typical invocation is:
+
+```bash
+python src/train_fusion.py \
+    --data_dir path/to/features \
+    --output_dir models \
+    --epochs 15 \
+    --batch_size 512
+```
+
+Available options include:
+
+```text
+--data_dir
+--output_dir
+--epochs
+--batch_size
+--lr
+--device
+```
+
+The training script operates on the feature representations required by the fusion model and saves the resulting checkpoint and decision threshold.
+
+---
+
+## Evaluation
+
+Evaluation utilities are provided in:
+
+```text
+src/evaluate.py
+```
+
+The module calculates:
+
+* Accuracy
+* Balanced Accuracy
+* Precision
+* Recall / Sensitivity
+* Specificity
+* F1-Score
+* ROC-AUC
+* PR-AUC
+* Matthews Correlation Coefficient
+* Cohen's Kappa
+* Brier Score
+* Log Loss
+
+Example:
+
+```python
+from src.evaluate import compute_clinical_metrics, print_metrics_table
+
+metrics = compute_clinical_metrics(
+    y_true,
+    y_probs,
+    threshold=0.41
+)
+
+print_metrics_table(metrics, title="Test Set Metrics")
+```
+
+---
+
+## Tests
+
+Run the test suite using:
+
+```bash
+python tests/test_pipeline.py
+```
+
+The tests cover the main components of the pipeline, including:
+
+* ResNet34-1D feature extraction
+* BiGRU feature extraction
+* Fusion output and modality weights
+* Checkpoint loading
+* ECG preprocessing
+* End-to-end inference
+* Evaluation utilities
 
 ---
 
@@ -401,119 +619,7 @@ CardioInsight/
 
 ---
 
-## Installation
-
-Clone the repository and create a Python virtual environment:
-
-```bash
-git clone https://github.com/Shreya-Sharma03/CardioInsight.git
-cd CardioInsight
-
-python -m venv .venv
-```
-
-### Linux / macOS
-
-```bash
-source .venv/bin/activate
-```
-
-### Windows
-
-```bash
-.venv\Scripts\activate
-```
-
-Install the required packages:
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Usage
-
-### Demo Inference
-
-Run the built-in synthetic ECG example:
-
-```bash
-python src/predict.py --demo
-```
-
-### ECG File
-
-For an ECG stored as a NumPy array:
-
-```bash
-python src/predict.py --ecg_file path/to/ecg_recording.npy
-```
-
-The input should contain a 12-lead ECG recording compatible with the preprocessing pipeline.
-
-### Python API
-
-```python
-import numpy as np
-from src.predict import CardioInsightPredictor
-
-predictor = CardioInsightPredictor()
-
-ecg = np.random.randn(12, 2500).astype(np.float32)
-
-result = predictor.predict_ecg(ecg, fs=250.0)
-
-print("Risk Category:", result["risk_stratification"])
-print("Risk Probability:", result["heart_failure_risk_probability"])
-print("Decision Threshold:", result["decision_threshold"])
-print("Modality Weights:", result["modality_reliability_weights"])
-```
-
----
-
-## Evaluation
-
-Evaluation utilities are provided in `src/evaluate.py`.
-
-Example:
-
-```python
-from src.evaluate import compute_clinical_metrics, print_metrics_table
-
-metrics = compute_clinical_metrics(
-    y_true,
-    y_probs,
-    threshold=0.41
-)
-
-print_metrics_table(metrics, title="Test Set Metrics")
-```
-
-The evaluation utilities calculate classification and statistical metrics such as accuracy, balanced accuracy, precision, recall, specificity, F1-score, ROC-AUC, PR-AUC, MCC, and Cohen's Kappa.
-
----
-
-## Tests
-
-Run the test suite with:
-
-```bash
-python tests/test_pipeline.py
-```
-
-The tests cover the major parts of the pipeline, including:
-
-* ResNet34-1D output dimensions
-* BiGRU feature extraction
-* Fusion and modality-weight constraints
-* Checkpoint loading
-* ECG preprocessing
-* Inference
-* Evaluation utilities
-
----
-
 ## Research / Medical Use
 
-CardioInsight is an academic research prototype for machine-learning experimentation with ECG data. It is not a medical device and should not be used as a standalone system for diagnosis, treatment, or clinical decision-making without appropriate clinical validation and regulatory approval.
+CardioInsight is an academic research prototype for experimentation with ECG-based machine learning. It is not a medical device and should not be used as a standalone system for diagnosis, treatment, or clinical decision-making without appropriate clinical validation and regulatory approval.
+
