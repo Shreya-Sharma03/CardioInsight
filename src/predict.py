@@ -56,7 +56,7 @@ class CardioInsightPredictor:
             if os.path.exists(thresh_path):
                 self.threshold = float(np.load(thresh_path))
             else:
-                self.threshold = 0.41  # Default validated optimal threshold
+                self.threshold = 0.41  # Optimal threshold determined on validation set
 
         # Load label map
         label_map_path = os.path.join(models_dir, "labels.pth")
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.demo or args.ecg_file is None:
-        print("\n--- Running CardioInsight Synthetic ECG Smoke Test ---")
+        print("\n--- Running CardioInsight Synthetic ECG Inference Demo ---")
         synthetic_ecg = np.random.randn(12, 2500).astype(np.float32)
         predictor = CardioInsightPredictor(threshold=args.threshold)
         res = predictor.predict_ecg(synthetic_ecg)

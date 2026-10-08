@@ -1,8 +1,8 @@
 """
-Comprehensive Test Suite for CardioInsight.
+Unit and integration tests for CardioInsight.
 
 Validates model architectures, checkpoint loading, preprocessing,
-end-to-end inference, and clinical evaluation metrics.
+end-to-end inference, and evaluation metrics.
 """
 
 import os

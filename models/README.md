@@ -10,15 +10,15 @@ This directory houses the trained model checkpoints, decision threshold, and cla
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `ResNet34_ECG.pth` | 29.0 MB | `ResNet34_1D` | `(B, 12, T)` | `logit: (B,)`, `feat: (B, 512)` | Strict state-dict match (218 keys) |
 | `BiGRU_ECG.pth` | 3.0 MB | `BiGRUECGClassifier` | `(B, 12, T)` | `logit: (B,)`, `feat: (B, 256)` | Strict state-dict match (50 keys) |
-| `FusionModel.pth` | 10.1 MB | `ECGFusionClassifier` | `(B, 512), (B, 256)` | `logits: (B,)`, `fused: (B, 512)` | Includes reliability gating & cross-modal attention |
-| `threshold.npy` | 136 B | NumPy scalar | — | Decision Threshold = `0.41` | Validated optimal threshold |
+| `FusionModel.pth` | 10.1 MB | `ECGFusionClassifier` | `(B, 512), (B, 256)` | `logits: (B,)`, `fused: (B, 512)` | Includes reliability gating and cross-modal attention |
+| `threshold.npy` | 136 B | NumPy scalar | — | Decision Threshold = `0.41` | Optimal decision threshold determined on validation set |
 | `labels.pth` | 1.3 KB | Python dict | — | `{0: 'Low Risk', 1: 'High Risk'}` | Clinical risk stratification categories |
 
 ---
 
 ## Architectural Compatibility
 
-All checkpoints strictly load with `strict=True` into their respective module definitions in `src/`:
+All checkpoints load with `strict=True` into their respective module definitions in `src/`:
 
 ```python
 import torch

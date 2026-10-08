@@ -1,7 +1,7 @@
 """
 ECG Signal Preprocessing Module for CardioInsight.
 
-Provides bandpass filtering, lead-wise z-score normalization, and shape verification
+Provides bandpass filtering, lead-wise z-score normalization, and signal alignment
 for 12-lead ECG signals (EchoNext standard: 12 leads, 250 Hz, 10 seconds = 2500 samples).
 """
 
