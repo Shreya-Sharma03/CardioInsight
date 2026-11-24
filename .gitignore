@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Frontend
+node_modules/
+dist/
+build/
+
+# Large datasets and model binaries
+*.npy
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.pkl
+*.joblib
+*.h5
+*.keras
+*.onnx
+*.zip
+
+# System
+.DS_Store
+Thumbs.db
+
+# Generated build and audit files
+*.tsbuildinfo
+audit_results/
+audit_tmp_resnet/
+desktop.ini
