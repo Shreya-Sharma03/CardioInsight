@@ -41,7 +41,7 @@ export const RiskResultCard: React.FC<RiskResultCardProps> = ({
     <div className="bg-surface rounded-xl border border-sandBorder p-6 shadow-sm">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold uppercase tracking-wider text-charcoal-muted">
-          Clinical Prediction
+          HEART PUMPING CHECK
         </span>
         <span className="text-xs font-mono font-medium text-charcoal-muted">
           Record #{prediction.record_index}
@@ -53,7 +53,7 @@ export const RiskResultCard: React.FC<RiskResultCardProps> = ({
         {isHighRisk ? (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-terracotta-light border border-terracotta-border text-terracotta font-bold text-sm tracking-wide">
             <AlertTriangle className="w-4 h-4 text-terracotta" />
-            <span>HIGH RISK</span>
+            <span>HIGHER LIKELIHOOD</span>
           </div>
         ) : (
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-sage-light border border-sage-border text-sage-dark font-bold text-sm tracking-wide">
@@ -73,7 +73,7 @@ export const RiskResultCard: React.FC<RiskResultCardProps> = ({
           {probPct.toFixed(1)}%
         </div>
         <p className="text-xs text-charcoal-muted mt-1">
-          Calculated heart failure risk probability derived from multimodal fusion
+          The AI estimates how likely your ECG is to show signs linked to the heart pumping out less blood than usual.
         </p>
       </div>
 
@@ -96,11 +96,16 @@ export const RiskResultCard: React.FC<RiskResultCardProps> = ({
             className="absolute -translate-x-1/2 text-charcoal font-semibold"
             style={{ left: `${cutoffPct}%` }}
           >
-            ▲ Cutoff (41%)
+            ▲ Result Cutoff (41%)
           </span>
           <span>100%</span>
         </div>
       </div>
+
+      {/* Explanatory Disclaimer */}
+      <p className="text-xs text-charcoal-muted mt-4 pt-3 border-t border-sandBorder leading-relaxed">
+        This is an AI prediction, not a confirmed health problem. A heart ultrasound can check how well your heart pumps.
+      </p>
     </div>
   );
 };

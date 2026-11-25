@@ -10,7 +10,6 @@ venv/
 .env
 .env.*
 !.env.example
-.streamlit/secrets.toml
 
 # Frontend
 node_modules/
@@ -36,6 +35,7 @@ Thumbs.db
 
 # Generated build and audit files
 *.tsbuildinfo
-audit_results/
+audit_results/*
+!audit_results/*.png
 audit_tmp_resnet/
 desktop.ini

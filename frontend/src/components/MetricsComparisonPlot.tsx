@@ -9,8 +9,8 @@ export const MetricsComparisonPlot: React.FC = () => {
 
     const categories = ['ROC-AUC', 'Balanced Acc', 'Sensitivity', 'Specificity', 'F1-Score'];
 
-    // Verified metrics at threshold = 0.41 (Epoch 7 Best Checkpoint)
-    const valMetrics = [88.92, 82.35, 77.94, 86.76, 66.21];
+    // Verified metrics at threshold = 0.41 (Epoch 7 Best Checkpoint: audit_results/reproduced_evaluation_report.md)
+    const valMetrics = [89.12, 82.33, 79.21, 85.45, 65.36];
     const testMetrics = [88.44, 81.01, 76.51, 85.51, 62.72];
 
     const data: Plotly.Data[] = [

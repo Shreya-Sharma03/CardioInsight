@@ -7,16 +7,16 @@ from pydantic import BaseModel, Field
 
 class MetricSplit(BaseModel):
     """Verified performance metrics for a specific data split and threshold."""
-    split_name: str = Field(..., example="Validation")
+    split_name: str = Field(..., example="Validation Split")
     sample_count: int = Field(..., example=4626)
-    checkpoint: str = Field(..., example="Epoch 7 Best (best_fusion_model.zip)")
+    checkpoint: str = Field(..., example="best_fusion_model.zip (Epoch 7)")
     threshold: float = Field(..., example=0.41)
-    roc_auc: float = Field(..., example=88.92)
-    balanced_accuracy: float = Field(..., example=82.35)
-    recall_sensitivity: float = Field(..., example=77.94)
-    specificity: float = Field(..., example=86.76)
-    precision: Optional[float] = Field(None, example=57.54)
-    f1_score: Optional[float] = Field(None, example=66.21)
+    roc_auc: float = Field(..., example=89.12)
+    balanced_accuracy: float = Field(..., example=82.33)
+    recall_sensitivity: float = Field(..., example=79.21)
+    specificity: float = Field(..., example=85.45)
+    precision: Optional[float] = Field(None, example=55.64)
+    f1_score: Optional[float] = Field(None, example=65.36)
 
 
 class BenchmarksResponse(BaseModel):
@@ -48,9 +48,14 @@ class ModelInfoResponse(BaseModel):
     branches: List[BranchArchitecture]
     fusion_mechanism: str = Field(
         ...,
-        example="Adaptive Reliability Fusion with Softmax Gating & 8-Head Cross-Modal Attention",
+        example="Adaptive Reliability Fusion with Softmax Gating & 8-Head Multi-Head Self-Attention in shared 512-d space",
     )
     classifier_head: str = Field(
         ...,
-        example="3-stage MLP (512 -> 256 -> 64 -> 1) with LayerNorm and Dropout",
+        example="4-stage MLP (512 -> 512 -> 256 -> 64 -> 1) with LayerNorm, GELU activations, and Dropout",
+    )
+    combined_system_parameters: Optional[int] = Field(
+        10544669,
+        example=10544669,
+        description="Combined parameter count across ResNet34-1D (7,223,681), BiGRU (806,169), and Fusion module (2,514,819)",
     )
