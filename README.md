@@ -187,53 +187,43 @@ CardioInsight follows a modular architecture consisting of a frontend, backend A
 
 ```mermaid
 flowchart TD
-    A["User"] --> B["React + TypeScript Frontend"]
-
-    B --> C["FastAPI Backend"]
-
-    C --> D["Model Service"]
-
-    D --> E["ECG Waveform Data"]
-
-    E --> F["ResNet34-1D"]
-    E --> G["BiGRU + Bahdanau Attention"]
-
-    F --> H["Adaptive Reliability Fusion"]
-    G --> H
-
-    H --> I["Cross-Modal Attention"]
-    I --> J["Classification Head"]
-
-    J --> K["Prediction + Reliability Weights"]
-
-    K --> C
-    C --> B
+    U[User] --> FE[React and TypeScript Frontend]
+    FE --> API[FastAPI Backend]
+    API --> MS[Model Service]
+    MS --> DATA[ECG Waveform Data]
+    DATA --> RES[ResNet34 1D Encoder]
+    DATA --> GRU[BiGRU with Bahdanau Attention]
+    RES --> FUSION[Adaptive Reliability Fusion]
+    GRU --> FUSION
+    FUSION --> ATT[Cross Modal Attention]
+    ATT --> CLS[Classification Head]
+    CLS --> OUT[Prediction and Reliability Weights]
+    OUT --> API
+    API --> FE
 ```
 
 ### Deep Learning Pipeline
 
 ```mermaid
 flowchart TD
-    A["12-Lead ECG Input"] --> B["Preprocessing"]
-
-    B --> C["ResNet34-1D Branch"]
-    B --> D["BiGRU Branch"]
-
-    C --> E["512-D Morphological Features"]
-    D --> F["256-D Temporal Features"]
-
-    E --> G["Feature Projection"]
-    F --> G
-
-    G --> H["Reliability Confidence Scores"]
-    H --> I["Softmax Gating"]
-
-    I --> J["Weighted Feature Representations"]
-    J --> K["8-Head Multi-Head Attention"]
-
-    K --> L["Mean Pooling + Feed-Forward Network"]
-    L --> M["Classification Head"]
-    M --> N["Prediction Probability"]
+    INPUT[12 Lead ECG Input] --> PRE[Preprocessing]
+    PRE --> RES[ResNet34 1D Branch]
+    PRE --> GRU[Three Layer BiGRU Branch]
+    RES --> RF[512 Dimensional Morphological Features]
+    GRU --> GF[256 Dimensional Temporal Features]
+    RF --> RP[ResNet Feature Projection]
+    GF --> GP[BiGRU Feature Projection]
+    RP --> RC[ResNet Reliability Score]
+    GP --> GC[BiGRU Reliability Score]
+    RC --> GATE[Softmax Reliability Gating]
+    GC --> GATE
+    RP --> WEIGHT[Weighted Feature Representations]
+    GP --> WEIGHT
+    GATE --> WEIGHT
+    WEIGHT --> ATT[8 Head Multi Head Attention]
+    ATT --> POOL[Mean Pooling and Feed Forward Network]
+    POOL --> HEAD[Classification Head]
+    HEAD --> PROB[Prediction Probability]
 ```
 
 ### Architecture Components
@@ -958,7 +948,7 @@ It is **not a medical device, diagnostic system, or substitute for professional 
 
 ---
 
-## 16. References & Acknowledgements
+## 16. References 
 
 ### Research References
 
@@ -970,22 +960,3 @@ It is **not a medical device, diagnostic system, or substitute for professional 
 
 4. **Focal Loss:** Lin, T.-Y., Goyal, P., Girshick, R., He, K., and Dollár, P. (2017). *Focal Loss for Dense Object Detection.*
 
-### Acknowledgements
-
-This project was developed as part of the **Thapar Experiential Learning Summer Internship, June–July 2026**, focusing on AI for early prediction and risk stratification of chronic heart failure.
-
----
-
-<p align="center">
-  <b>CardioInsight</b><br>
-  Multimodal Deep Learning • ECG Analysis • Adaptive Feature Fusion
-</p>
-
-<p align="center">
-  Developed by <b>Shreya Sharma</b><br>
-  Thapar Institute of Engineering & Technology
-</p>
-
-<p align="center">
-  <a href="https://github.com/Shreya-Sharma03/CardioInsight">GitHub Repository</a>
-</p>
