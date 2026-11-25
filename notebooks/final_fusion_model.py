@@ -278,7 +278,11 @@ def run_exploratory_analysis(
         device=device,
     )
 
-    optimal_temp = fit_temperature_scaling(logits, labels)
+    optimal_temp: float | None = None
+    if split == "val":
+        optimal_temp = fit_temperature_scaling(logits, labels)
+    elif split == "test":
+        print("Note: Temperature scaling calibration is skipped for the holdout test split (must be fitted on validation data only).")
 
     print(f"Split: {split} (N={len(labels):,}) | Checkpoint: {resolved_ckpt.name} | Threshold: {threshold:.2f}")
     print(f"  ROC-AUC           : {metrics['roc_auc'] * 100:.2f}%")
@@ -288,7 +292,8 @@ def run_exploratory_analysis(
     print(f"  Specificity       : {metrics['specificity'] * 100:.2f}%")
     print(f"  Mean alpha_res    : {metrics['mean_alpha_res']:.4f}")
     print(f"  Mean alpha_gru    : {metrics['mean_alpha_gru']:.4f}")
-    print(f"  Optimal Temp (NLL): {optimal_temp:.4f}")
+    if optimal_temp is not None:
+        print(f"  Optimal Temp (NLL): {optimal_temp:.4f}")
 
     if save_dir is not None:
         save_dir.mkdir(parents=True, exist_ok=True)
@@ -297,7 +302,10 @@ def run_exploratory_analysis(
         plot_latent_tsne(fused_embeddings, labels, save_dir / f"{split}_latent_tsne.png")
         print(f"Exploratory figures written to: {save_dir}")
 
-    return {"roc_auc": metrics["roc_auc"], "optimal_temperature": optimal_temp}
+    results = {"roc_auc": metrics["roc_auc"]}
+    if optimal_temp is not None:
+        results["optimal_temperature"] = optimal_temp
+    return results
 
 
 def run_modular_training(save_path: str = "best_fusion_model_repro.pth") -> None:
