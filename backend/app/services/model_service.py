@@ -21,8 +21,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from evaluation.evaluator import load_fusion_checkpoint
-from resnet_model import ResNet34_1D
-from bigru_model import BiGRUECGClassifier
+from models.resnet_model import ResNet34_1D
+from models.bigru_model import BiGRUECGClassifier
 from config.config import DEFAULT_PATH_CONFIG, DEFAULT_EVAL_CONFIG
 
 # Standard 12-lead names in physiological order

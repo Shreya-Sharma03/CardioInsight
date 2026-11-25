@@ -53,7 +53,7 @@ export const ModelInsightsPage: React.FC = () => {
             </h2>
           </div>
           <span className="text-xs font-mono bg-sand border border-sandBorder px-3 py-1 rounded-md text-charcoal">
-            {modelInfo ? `${modelInfo.total_parameters.toLocaleString()} Total Parameters` : '2,514,819 Parameters'}
+            {modelInfo ? `${modelInfo.total_parameters.toLocaleString()} Fusion Parameters (10.54M Combined)` : '2,514,819 Fusion Parameters (10.54M Combined)'}
           </span>
         </div>
 
@@ -91,7 +91,7 @@ export const ModelInsightsPage: React.FC = () => {
                   <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 bg-white rounded border border-sandBorder text-charcoal">256-d</span>
                 </div>
                 <p className="text-[11px] text-charcoal-muted leading-tight">
-                  Temporal cadence & sequence dynamics from 3-layer bidirectional recurrent network.
+                  Temporal cadence & sequence dynamics from 3-layer bidirectional GRU with additive Bahdanau attention.
                 </p>
               </div>
             </div>
@@ -185,10 +185,10 @@ export const ModelInsightsPage: React.FC = () => {
                   </div>
                 </div>
                 <h4 className="font-bold text-xs text-charcoal">
-                  3-Stage MLP Classifier
+                  4-Stage MLP Classifier
                 </h4>
                 <p className="text-[11px] text-charcoal-muted leading-tight">
-                  Dense layers (512 &rarr; 256 &rarr; 64 &rarr; 1) with GELU activations and dropout.
+                  Dense layers (512 &rarr; 512 &rarr; 256 &rarr; 64 &rarr; 1) with GELU activations and dropout.
                 </p>
                 <div className="pt-1">
                   <div className="text-[10px] font-mono bg-white px-2 py-1 rounded border border-sandBorder inline-block text-charcoal font-bold">
@@ -254,7 +254,7 @@ export const ModelInsightsPage: React.FC = () => {
           <div className="p-3.5 bg-sand/40 rounded-lg border border-sandBorder text-xs text-charcoal-muted flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-terracotta shrink-0 mt-0.5" />
             <div className="leading-relaxed">
-              <strong className="text-charcoal font-semibold">Upstream Feature Representation Notice:</strong> The deployed model performs inference directly on these high-dimensional latent vectors rather than raw analog microvolt ECG recordings. Raw 12-lead voltage waveforms were transformed upstream into these cached feature representations, guaranteeing high-throughput, low-latency cross-modal inference without local signal preprocessing overhead.
+              <strong className="text-charcoal font-semibold">Dual Inference & Upstream Feature Notice:</strong> The interactive Prediction Studio executes live end-to-end inference directly from stored preprocessed 12-lead ECG waveforms (<code className="font-mono text-[10px] bg-white px-1 rounded border border-sandBorder">POST /api/predict/raw-record</code>), streaming the signals through the full ResNet34 and BiGRU feature extractors before fusion. In contrast, offline training and batch benchmarking utilize cached 512-d and 256-d latent feature arrays (<code className="font-mono text-[10px] bg-white px-1 rounded border border-sandBorder">POST /api/predict</code>), accelerating hyperparameter sweeps without redundant signal convolutions. Note that stored waveforms are digitally preprocessed (filtered, resampled, normalized), not raw analog microvolt voltages.
             </div>
           </div>
         </div>

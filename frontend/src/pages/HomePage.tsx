@@ -39,12 +39,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
           {/* Main Headline */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[#343D35] leading-[1.18]">
-            Understanding Heart Failure Risk Through ECG Signals
+            Understanding Heart Function Through ECG Signals
           </h1>
 
           {/* Supporting Description - max-w-xl prevents collision with ECG baseline on right */}
           <p className="text-base sm:text-lg text-[#343D35] leading-relaxed font-normal max-w-xl">
-            CardioInsight is a research prototype exploring how electrocardiogram signals can support early heart failure risk stratification through deep learning.
+            CardioInsight is a research prototype that uses deep learning to identify ECG patterns associated with reduced heart pumping function.
           </p>
 
           {/* Prominent CTAs - Both consistent dark charcoal (#2C3531) with hover (#222926) */}

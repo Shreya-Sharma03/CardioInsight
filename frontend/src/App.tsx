@@ -57,7 +57,7 @@ export const App: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
             <span className="font-mono text-[11px] text-charcoal-subtle">
-              Checkpoint: Epoch 7 Best · 2,514,819 Params
+              Checkpoint: Epoch 7 Best · 2,514,819 Fusion Params (10.54M Combined)
             </span>
             <span className="text-sandBorder">|</span>
             <span>Research Decision-Support Prototype</span>
